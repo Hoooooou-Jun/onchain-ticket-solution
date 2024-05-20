@@ -47,4 +47,12 @@ pub mod onchain_ticket_solution {
 	) -> Result<()> {
 		refund_ticket::refund_ticket(ctx, name, seat_number)
 	}
+
+	pub fn burn_ticket(
+		ctx: Context<BurnTicket>,
+		name: String,
+		seat_number: String,
+	) -> Result<()> {
+		burn_ticket::burn_ticket(ctx, name, seat_number)
+	}
 }

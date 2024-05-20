@@ -154,4 +154,31 @@ describe("onchain-ticket-solution", () => {
     console.log(await provider.connection.getBalance(purchaseUser.publicKey) / anchor.web3.LAMPORTS_PER_SOL)
     console.log(await provider.connection.getBalance(provider.wallet.publicKey) / anchor.web3.LAMPORTS_PER_SOL)
   });
+
+  it("burn ticket", async () => {
+    const eventDate = 1716631200;
+    const bufferDate = unixTimestampSerialize(eventDate);
+
+    const [ticketPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('ticket'),
+        eventPda.toBuffer(),
+        Buffer.from('R1'),
+        bufferDate
+      ],
+      program.programId,
+    );
+
+    const tx = await program.methods.burnTicket(
+      "장범준 콘서트",
+      "R1",
+    ).accounts({
+      event: eventPda,
+      ticket: ticketPda,
+      authority: provider.wallet.publicKey,
+    })
+    .rpc()
+    const account = await program.account.ticketAccount.all();
+    console.log(account);
+  });
 });
