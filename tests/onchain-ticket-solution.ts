@@ -2,23 +2,8 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { OnchainTicketSolution } from "../target/types/onchain_ticket_solution";
 import { BN } from "bn.js";
-import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
-
-const unixTimestampConverter = (data) => {
-  let timestamp = new Date(Number(data) * 1000)
-  return timestamp.getUTCFullYear() + '-' +
-  ('0' + (timestamp.getUTCMonth() + 1)).slice(-2) + '-' +
-  ('0' + timestamp.getUTCDate()).slice(-2) + ' ' +
-  ('0' + timestamp.getUTCHours()).slice(-2) + ':' +
-  ('0' + timestamp.getUTCMinutes()).slice(-2);
-}
-
-const unixTimestampSerialize = (date) => {
-  const eventDateBigInt = BigInt(date); // BigInt로 변환 (음수 처리를 위해)
-  const buffer = Buffer.alloc(8); // Buffer를 생성하고 8바이트의 공간을 할당 (i64는 8바이트 크기)
-  buffer.writeBigInt64LE(eventDateBigInt, 0); // Buffer에 BigInt 값을 little-endian 형식으로 쓰기
-  return buffer;
-}
+import { unixTimestampConverter } from "./unixTimestampConverter";
+import { unixTimestampSerialize } from "./unixTimestampSerialize";
 
 describe("onchain-ticket-solution", () => {
   const provider = anchor.AnchorProvider.env()
@@ -33,6 +18,8 @@ describe("onchain-ticket-solution", () => {
     ],
     program.programId
   );
+
+  const purchaseUser = anchor.web3.Keypair.generate()
 
   it("initialize event", async () => {
     /* 한국 시간은 UTC+9 */
@@ -88,7 +75,6 @@ describe("onchain-ticket-solution", () => {
   });
 
   it("purchase ticket", async () => {
-    const purchaseUser = anchor.web3.Keypair.generate()
     const airdropSignature = await provider.connection.requestAirdrop(
       purchaseUser.publicKey,
       15 * anchor.web3.LAMPORTS_PER_SOL
@@ -128,6 +114,39 @@ describe("onchain-ticket-solution", () => {
     } catch(err) {
       console.log(err);
     }
+
+    const account = await program.account.ticketAccount.all();
+    console.log(account);
+
+    console.log(await provider.connection.getBalance(purchaseUser.publicKey) / anchor.web3.LAMPORTS_PER_SOL)
+    console.log(await provider.connection.getBalance(provider.wallet.publicKey) / anchor.web3.LAMPORTS_PER_SOL)
+  });
+
+  it("refund ticket", async () => {
+    const eventDate = 1716631200;
+    const bufferDate = unixTimestampSerialize(eventDate);
+
+    const [ticketPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('ticket'),
+        eventPda.toBuffer(),
+        Buffer.from('R1'),
+        bufferDate
+      ],
+      program.programId,
+    );
+
+    const tx = await program.methods.refundTicket(
+      "장범준 콘서트",
+      "R1",
+    ).accounts({
+      event: eventPda,
+      ticket: ticketPda,
+      eventAuthority: provider.wallet.publicKey,
+      buyer: purchaseUser.publicKey
+    })
+    .signers([purchaseUser])
+    .rpc();
 
     const account = await program.account.ticketAccount.all();
     console.log(account);
