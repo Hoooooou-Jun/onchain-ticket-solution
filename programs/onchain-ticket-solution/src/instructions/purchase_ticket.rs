@@ -40,41 +40,40 @@ pub struct PurchaseTicket<'info> {
 }
 
 pub fn purchase_ticket(
-    ctx: Context<PurchaseTicket>,
-    _name: String,
-    _seat_number: String,
+	ctx: Context<PurchaseTicket>,
+	_name: String,
+	_seat_number: String,
 ) -> Result<()> {
-    let ticket = &mut ctx.accounts.ticket;
-    let ticket_authority = &ctx.accounts.ticket_authority;
-    let buyer = &ctx.accounts.buyer;
+	let ticket = &mut ctx.accounts.ticket;
+	let ticket_authority = &ctx.accounts.ticket_authority;
+	let buyer = &ctx.accounts.buyer;
 
-    if ticket.is_sold {
-        return Err(error!(TicketAlreadySold));
-    }
+	if ticket.is_sold {
+		return Err(error!(TicketAlreadySold));
+	}
 
-    if Clock::get()?.unix_timestamp < ticket.event_date {
-        return Err(error!(SaleNotStarted));
-    }
+	if Clock::get()?.unix_timestamp < ticket.event_date {
+		return Err(error!(SaleNotStarted));
+	}
 
-    if buyer.lamports() < ticket.price {
-        return Err(error!(InsufficientFunds))
-    }
+	if buyer.lamports() < ticket.price {
+		return Err(error!(InsufficientFunds))
+	}
 
-    invoke(
-        &system_instruction::transfer(
-            buyer.key,
-            ticket_authority.key,
-            ticket.price
-        ),
-        &[
-            buyer.to_account_info(),
-            ticket_authority.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-        ],
-    )?;
+	invoke(
+		&system_instruction::transfer(
+			buyer.key,
+			ticket_authority.key,
+			ticket.price
+		),
+		&[
+			buyer.to_account_info(),
+			ticket_authority.to_account_info(),
+			ctx.accounts.system_program.to_account_info(),
+		],
+	)?;
+	ticket.is_sold = true;
+	ticket.authority = *buyer.key;
 
-    ticket.is_sold = true;
-    ticket.authority = *buyer.key;
-
-    Ok(())
+	Ok(())
 }

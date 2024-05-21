@@ -40,39 +40,39 @@ pub struct RefundTicket<'info> {
 }
 
 pub fn refund_ticket(
-    ctx: Context<RefundTicket>,
-    _name: String,
-    _seat_number: String,
+	ctx: Context<RefundTicket>,
+	_name: String,
+	_seat_number: String,
 ) -> Result<()> {
-    let ticket = &mut ctx.accounts.ticket;
-    let event_authority = &ctx.accounts.event_authority;
-    let buyer = &ctx.accounts.buyer;
+	let ticket = &mut ctx.accounts.ticket;
+	let event_authority = &ctx.accounts.event_authority;
+	let buyer = &ctx.accounts.buyer;
 
-    if !ticket.is_sold {
-        return Err(error!(TicketNotSold));
-    }
+	if !ticket.is_sold {
+		return Err(error!(TicketNotSold));
+	}
 
-    if ticket.authority != *buyer.key {
-        return Err(error!(Unauthorized));
-    }
+	if ticket.authority != *buyer.key {
+		return Err(error!(Unauthorized));
+	}
 
-    /* 환불 규정 날짜 이외 에러처리 필요 */
+	/* 환불 규정 날짜 이외 에러처리 필요 */
 
-    invoke(
-        &system_instruction::transfer(
-            event_authority.key,
-            buyer.key,
-            ticket.price
-        ),
-        &[
-            event_authority.to_account_info(),
-            buyer.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-        ],
-    )?;
+	invoke(
+		&system_instruction::transfer(
+			event_authority.key,
+			buyer.key,
+			ticket.price
+		),
+		&[
+			event_authority.to_account_info(),
+			buyer.to_account_info(),
+			ctx.accounts.system_program.to_account_info(),
+		],
+	)?;
 
-    ticket.is_sold = false;
-    ticket.authority = *event_authority.key;
+	ticket.is_sold = false;
+	ticket.authority = *event_authority.key;
 
-    Ok(())
+	Ok(())
 }
