@@ -48,7 +48,7 @@ pub fn purchase_ticket(
 	let ticket_authority = &ctx.accounts.ticket_authority;
 	let buyer = &ctx.accounts.buyer;
 
-	if ticket.is_sold {
+	if matches!(ticket.state, TicketState::Unsealed) && matches!(ticket.state, TicketState::Used) {
 		return Err(error!(TicketAlreadySold));
 	}
 
@@ -72,7 +72,7 @@ pub fn purchase_ticket(
 			ctx.accounts.system_program.to_account_info(),
 		],
 	)?;
-	ticket.is_sold = true;
+	ticket.state = TicketState::Unsealed;
 	ticket.authority = *buyer.key;
 
 	Ok(())

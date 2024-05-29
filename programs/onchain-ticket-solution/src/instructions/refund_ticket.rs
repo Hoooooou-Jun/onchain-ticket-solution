@@ -48,8 +48,12 @@ pub fn refund_ticket(
 	let event_authority = &ctx.accounts.event_authority;
 	let buyer = &ctx.accounts.buyer;
 
-	if !ticket.is_sold {
+	if matches!(ticket.state, TicketState::Sealed) {
 		return Err(error!(TicketNotSold));
+	}
+
+	if matches!(ticket.state, TicketState::Used) {
+		return Err(error!(TicketAlreadyUsed));
 	}
 
 	if ticket.authority != *buyer.key {
@@ -71,7 +75,7 @@ pub fn refund_ticket(
 		],
 	)?;
 
-	ticket.is_sold = false;
+	ticket.state = TicketState::Sealed;
 	ticket.authority = *event_authority.key;
 
 	Ok(())

@@ -1,7 +1,13 @@
 use anchor_lang::prelude::*;
 
+#[derive(Clone, Copy, AnchorSerialize, AnchorDeserialize)]
+pub enum TicketState {
+    Sealed,
+    Unsealed,
+    Used,
+}
+
 #[account]
-#[derive(Default)]
 pub struct EventAccount {
 	pub authority: Pubkey,
 	pub name: String,
@@ -10,7 +16,6 @@ pub struct EventAccount {
 }
 
 #[account]
-#[derive(Default)]
 pub struct TicketAccount {
 	pub authority: Pubkey,
 	pub event_key: Pubkey,
@@ -18,5 +23,5 @@ pub struct TicketAccount {
 	pub price: u64,
 	pub img_cid: String,
 	pub seat_number: String,
-	pub is_sold: bool,
+	pub state: TicketState,
 }
